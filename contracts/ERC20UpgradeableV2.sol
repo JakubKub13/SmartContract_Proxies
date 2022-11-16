@@ -5,8 +5,8 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 contract TokenUpgradeableV2 is ERC20Upgradeable, AccessControlUpgradeable {
-    bytes32 public MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public AUDIT_ROLE = keccak256("AUDIT_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant AUDIT_ROLE = keccak256("AUDIT_ROLE");
     bytes32 public someVarNotConst;
     uint256 public auditedSupply;
 
