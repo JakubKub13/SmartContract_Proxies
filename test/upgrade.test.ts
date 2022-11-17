@@ -94,6 +94,43 @@ describe("Upgrade", async () => {
             it("Fails", async () => {
                 await expect(upgrades.upgradeProxy(tokenProxy.address, tokenUpgradeableV2WrongFactory)).to.eventually.be.rejectedWith("New storage layout is incompatible");
             })
-        })
+        });
+
+        describe("When the upgrade contract is correct", async () => {
+            const TEST_AUDIT_VALUE = 1000;
+            const TEST_UPDATE_MINT_VALUE = TEST_AUDIT_VALUE + 1;
+
+            let tokenProxyUpdated: TokenUpgradeableV2;
+            beforeEach(async () => {
+                const tokenProxyUpdated_ = await upgrades.upgradeProxy(tokenProxy.address, tokenUpgradeableV2Factory);
+                tokenProxyUpdated = tokenProxyUpdated_ as TokenUpgradeableV2;
+                const AUDIT_ROLE = await tokenProxyUpdated.AUDIT_ROLE();
+                const grantRoleTX = await tokenProxyUpdated.grantRole(AUDIT_ROLE, accounts[1].address);
+                await grantRoleTX.wait();
+                const submitAudit = await tokenProxyUpdated.connect(accounts[1]).auditReport(ethers.utils.parseEther(TEST_AUDIT_VALUE.toFixed(18)));
+                await submitAudit.wait();
+            });
+
+            it("Mints tokens correctly using a valid minter after the audit report is registered", async () => {
+                expect(TEST_AUDIT_VALUE >= MINT_TEST_VALUE);
+                const totalSupplyBefore = await tokenProxyUpdated.totalSupply();
+                const mintTx = await tokenProxyUpdated.mint(accounts[0].address, ethers.utils.parseEther(MINT_TEST_VALUE.toFixed(18)));
+                await mintTx.wait();
+                const totalSupplyAfter = await tokenProxyUpdated.totalSupply();
+                const diff = totalSupplyAfter.sub(totalSupplyBefore);
+                expect(Number(ethers.utils.formatEther(diff))).to.eq(MINT_TEST_VALUE);
+                const balanceAfter = await tokenProxyUpdated.balanceOf(accounts[0].address);
+                expect(Number(ethers.utils.formatEther(balanceAfter))).to.eq(MINT_TEST_VALUE)
+            });
+        
+
+            it("Fails when minting more than registered", async () => {
+                expect(TEST_UPDATE_MINT_VALUE >= TEST_AUDIT_VALUE);
+                await expect(tokenProxyUpdated.mint(accounts[0].address, ethers.utils.parseEther(TEST_UPDATE_MINT_VALUE.toFixed(18))))
+                    .to.be.rejectedWith("Mint value is greater than what is available to be minted");
+            });
+        });
+
+
     });
 });
