@@ -130,7 +130,5 @@ describe("Upgrade", async () => {
                     .to.be.rejectedWith("Mint value is greater than what is available to be minted");
             });
         });
-
-
     });
 });
